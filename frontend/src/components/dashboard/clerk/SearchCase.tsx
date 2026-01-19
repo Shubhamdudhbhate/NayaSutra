@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, FileText, User, Scale, AlertCircle, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertCircle,
+  FileText,
+  Loader2,
+  Scale,
+  Search,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -58,10 +65,11 @@ export const SearchCase = () => {
           status,
           party_a_name,
           party_b_name,
-          created_at,
-          assigned_judge:assigned_judge_id(full_name)
+          created_at
         `)
-        .or(`case_number.ilike.%${searchQuery}%,unique_identifier.ilike.%${searchQuery}%`)
+        .or(
+          `case_number.ilike.%${searchQuery}%,unique_identifier.ilike.%${searchQuery}%`,
+        )
         .limit(1)
         .maybeSingle();
 
@@ -123,9 +131,7 @@ export const SearchCase = () => {
           disabled={isSearching || !searchQuery.trim()}
           className="h-11 px-6"
         >
-          {isSearching ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
+          {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : (
             <>
               <Search className="w-4 h-4 mr-2" />
               Search
@@ -148,7 +154,8 @@ export const SearchCase = () => {
             </div>
             <h3 className="text-lg font-medium mb-1">No Case Found</h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              No case matches the ID "{searchQuery}". Please check the ID and try again.
+              No case matches the ID "{searchQuery}". Please check the ID and
+              try again.
             </p>
           </motion.div>
         )}
@@ -168,7 +175,9 @@ export const SearchCase = () => {
                     <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg">{searchResult.title}</h3>
+                    <h3 className="font-semibold text-lg">
+                      {searchResult.title}
+                    </h3>
                     <p className="text-sm font-mono text-muted-foreground">
                       {searchResult.case_number}
                     </p>
@@ -178,7 +187,7 @@ export const SearchCase = () => {
                   variant="outline"
                   className={cn(
                     "capitalize",
-                    statusColors[searchResult.status] || statusColors.pending
+                    statusColors[searchResult.status] || statusColors.pending,
                   )}
                 >
                   {searchResult.status.replace("_", " ")}
@@ -194,7 +203,9 @@ export const SearchCase = () => {
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">
                     Case Type
                   </p>
-                  <p className="font-medium capitalize">{searchResult.case_type}</p>
+                  <p className="font-medium capitalize">
+                    {searchResult.case_type}
+                  </p>
                 </div>
 
                 {/* FIR/Case ID */}
@@ -241,18 +252,20 @@ export const SearchCase = () => {
                     </p>
                   </div>
                 </div>
-
               </div>
 
               {/* Filed Date */}
               <div className="pt-3 border-t border-border">
                 <p className="text-xs text-muted-foreground">
                   Filed on{" "}
-                  {new Date(searchResult.created_at).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {new Date(searchResult.created_at).toLocaleDateString(
+                    "en-IN",
+                    {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    },
+                  )}
                 </p>
               </div>
             </div>

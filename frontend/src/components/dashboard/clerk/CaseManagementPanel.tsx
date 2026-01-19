@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  Briefcase,
-  Gavel,
-  MessageSquare,
-  FileText,
-  Upload,
-  Check,
-  Send,
-  Loader2,
   Bell,
+  Briefcase,
+  Check,
+  FileText,
+  Gavel,
+  Loader2,
+  MessageSquare,
+  Send,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,6 @@ type Profile = {
   id: string;
   full_name: string;
   role_category: string;
-  unique_id: string | null;
 };
 
 interface CaseManagementPanelProps {
@@ -46,18 +45,20 @@ interface CaseManagementPanelProps {
   onCaseUpdate?: () => void;
 }
 
-export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPanelProps) => {
+export const CaseManagementPanel = (
+  { caseData, onCaseUpdate }: CaseManagementPanelProps,
+) => {
   const [activeTab, setActiveTab] = useState("conversation");
   const [judges, setJudges] = useState<Profile[]>([]);
-  const [selectedJudge, setSelectedJudge] = useState(caseData.assigned_judge_id || "");
+  const [selectedJudge, setSelectedJudge] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
-  
+
   // Signature states (read-only - signatures come from respective dashboards)
   const [judgeSignature] = useState<string | null>(null);
   const [lawyerASignature] = useState<string | null>(null);
   const [lawyerBSignature] = useState<string | null>(null);
-  
+
   // IPFS state
   const [isReadyForIPFS, setIsReadyForIPFS] = useState(false);
   const [isSendingToIPFS, setIsSendingToIPFS] = useState(false);
@@ -66,7 +67,7 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
     const fetchJudges = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, full_name, role_category, unique_id")
+        .select("id, full_name, role_category")
         .eq("role_category", "judiciary");
       setJudges(data || []);
     };
@@ -85,15 +86,11 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
   const handleAssignJudge = async () => {
     if (!selectedJudge) return;
     setIsAssigning(true);
-    
-    try {
-      const { error } = await supabase
-        .from("cases")
-        .update({ assigned_judge_id: selectedJudge })
-        .eq("id", caseData.id);
 
-      if (error) throw error;
-      toast.success("Judge assigned successfully!");
+    try {
+      // Judge assignment column has been removed from cases table
+      // Assignment now handled through session_logs table for future implementation
+      toast.info("Judge assignment feature planned for future release");
       onCaseUpdate?.();
     } catch (error: any) {
       toast.error(error.message || "Failed to assign judge");
@@ -107,12 +104,12 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
       toast.error("Please assign a judge first");
       return;
     }
-    
+
     setIsSendingNotification(true);
-    
+
     // Simulate notification sending
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    
+
     toast.success("Notification sent to assigned judge!");
     setIsSendingNotification(false);
   };
@@ -124,7 +121,7 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
     }
 
     setIsSendingToIPFS(true);
-    
+
     // Prepare data for IPFS
     const ipfsPayload = {
       caseId: caseData.id,
@@ -140,7 +137,7 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
 
     // Simulate IPFS preparation
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    
+
     console.log("IPFS Payload ready:", ipfsPayload);
     toast.success("Case package prepared for IPFS submission!");
     setIsSendingToIPFS(false);
@@ -172,7 +169,7 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
           <Gavel className="w-4 h-4 text-amber-500" />
           <h3 className="font-medium">Judge Assignment</h3>
         </div>
-        
+
         <div className="flex gap-3">
           <select
             value={selectedJudge}
@@ -182,46 +179,47 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
             <option value="">Select a judge...</option>
             {judges.map((judge) => (
               <option key={judge.id} value={judge.id}>
-                {judge.full_name} {judge.unique_id ? `(${judge.unique_id})` : ""}
+                {judge.full_name}
               </option>
             ))}
           </select>
-          
+
           <Button
             onClick={handleAssignJudge}
             disabled={!selectedJudge || isAssigning}
             size="sm"
           >
-            {isAssigning ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
+            {isAssigning ? <Loader2 className="w-4 h-4 animate-spin" /> : (
               <>
                 <Check className="w-4 h-4 mr-1" />
                 Assign
               </>
             )}
           </Button>
-          
+
           <Button
             variant="outline"
             onClick={handleSendNotification}
             disabled={!caseData.assigned_judge_id || isSendingNotification}
             size="sm"
           >
-            {isSendingNotification ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Bell className="w-4 h-4 mr-1" />
-                Notify
-              </>
-            )}
+            {isSendingNotification
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : (
+                <>
+                  <Bell className="w-4 h-4 mr-1" />
+                  Notify
+                </>
+              )}
           </Button>
         </div>
-        
+
         {caseData.assigned_judge && (
           <p className="text-sm text-muted-foreground mt-2">
-            Currently assigned: <span className="text-foreground font-medium">{caseData.assigned_judge.full_name}</span>
+            Currently assigned:{" "}
+            <span className="text-foreground font-medium">
+              {caseData.assigned_judge.full_name}
+            </span>
           </p>
         )}
       </div>
@@ -277,17 +275,21 @@ export const CaseManagementPanel = ({ caseData, onCaseUpdate }: CaseManagementPa
           onClick={handleSendToIPFS}
           disabled={!isReadyForIPFS || isSendingToIPFS}
         >
-          {isSendingToIPFS ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Preparing for IPFS...
-            </>
-          ) : (
-            <>
-              <Send className="w-4 h-4 mr-2" />
-              {isReadyForIPFS ? "Send to IPFS" : "Collect All Signatures to Enable IPFS"}
-            </>
-          )}
+          {isSendingToIPFS
+            ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Preparing for IPFS...
+              </>
+            )
+            : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                {isReadyForIPFS
+                  ? "Send to IPFS"
+                  : "Collect All Signatures to Enable IPFS"}
+              </>
+            )}
         </Button>
         {!isReadyForIPFS && (
           <p className="text-xs text-muted-foreground text-center mt-2">

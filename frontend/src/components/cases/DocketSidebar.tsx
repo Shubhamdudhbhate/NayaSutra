@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   Calendar,
-  FileText,
-  Users,
-  History,
   ChevronRight,
   Circle,
-  StickyNote,
   Clock,
+  FileText,
+  History,
+  StickyNote,
+  Users,
 } from "lucide-react";
 import {
   Accordion,
@@ -77,13 +77,13 @@ export const DocketSidebar = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingNotes, setIsLoadingNotes] = useState(true);
 
-  // Fetch session notes - TODO: Implement when session_logs table is created
+  // Fetch session notes - TODO: Implement when session_logs table is populated
   useEffect(() => {
     setIsLoadingNotes(false);
     setSessionNotes([]);
   }, [caseId]);
 
-  // Fetch diary entries - TODO: Implement when case_diary table is created
+  // Fetch diary entries - Removed (case_diary table deleted - use chain_of_custody for audit trail)
   useEffect(() => {
     setIsLoading(false);
     setDiaryEntries([]);
@@ -111,7 +111,9 @@ export const DocketSidebar = ({
   const currentStatus = statusConfig[status] || statusConfig.pending;
 
   // Filter sessions that have notes
-  const sessionsWithNotes = sessionNotes.filter((s) => s.notes && s.notes.trim() !== "");
+  const sessionsWithNotes = sessionNotes.filter((s) =>
+    s.notes && s.notes.trim() !== ""
+  );
 
   return (
     <div className="h-full border-l border-border bg-card">
@@ -186,7 +188,7 @@ export const DocketSidebar = ({
                         "w-2 h-2",
                         party.isOnline
                           ? "text-emerald-400 fill-emerald-400"
-                          : "text-muted-foreground fill-muted-foreground"
+                          : "text-muted-foreground fill-muted-foreground",
                       )}
                     />
                     <span className="text-sm">{party.name}</span>
@@ -219,66 +221,75 @@ export const DocketSidebar = ({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            {isLoadingNotes ? (
-              <div className="flex items-center justify-center py-6">
-                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
-            ) : sessionsWithNotes.length > 0 ? (
-              <ScrollArea className="max-h-[300px]">
-                <div className="space-y-3">
-                  {sessionsWithNotes.map((session) => (
-                    <div
-                      key={session.id}
-                      className="p-3 rounded-lg bg-secondary/30 border border-border"
-                    >
-                      {/* Session Header */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-xs font-medium">
-                            {format(new Date(session.started_at), "MMM dd, yyyy")}
+            {isLoadingNotes
+              ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
+              )
+              : sessionsWithNotes.length > 0
+              ? (
+                <ScrollArea className="max-h-[300px]">
+                  <div className="space-y-3">
+                    {sessionsWithNotes.map((session) => (
+                      <div
+                        key={session.id}
+                        className="p-3 rounded-lg bg-secondary/30 border border-border"
+                      >
+                        {/* Session Header */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs font-medium">
+                              {format(
+                                new Date(session.started_at),
+                                "MMM dd, yyyy",
+                              )}
+                            </span>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-xs",
+                              session.status === "active"
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                : "bg-muted text-muted-foreground border-border",
+                            )}
+                          >
+                            {session.status === "active" ? "Live" : "Ended"}
+                          </Badge>
+                        </div>
+
+                        {/* Session Time */}
+                        <div className="text-xs text-muted-foreground mb-2">
+                          {format(new Date(session.started_at), "h:mm a")}
+                          {session.ended_at && (
+                            <>
+                              — {format(new Date(session.ended_at), "h:mm a")}
+                            </>
+                          )}
+                          <span className="ml-2 text-muted-foreground/60">
+                            by {session.judge_name}
                           </span>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-xs",
-                            session.status === "active"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                              : "bg-muted text-muted-foreground border-border"
-                          )}
-                        >
-                          {session.status === "active" ? "Live" : "Ended"}
-                        </Badge>
-                      </div>
 
-                      {/* Session Time */}
-                      <div className="text-xs text-muted-foreground mb-2">
-                        {format(new Date(session.started_at), "h:mm a")}
-                        {session.ended_at && (
-                          <> — {format(new Date(session.ended_at), "h:mm a")}</>
-                        )}
-                        <span className="ml-2 text-muted-foreground/60">
-                          by {session.judge_name}
-                        </span>
+                        {/* Notes Content */}
+                        <div className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2 border border-border/50">
+                          {session.notes}
+                        </div>
                       </div>
-
-                      {/* Notes Content */}
-                      <div className="text-sm text-foreground whitespace-pre-wrap bg-background/50 rounded p-2 border border-border/50">
-                        {session.notes}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                </ScrollArea>
+              )
+              : (
+                <div className="text-center py-6">
+                  <StickyNote className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    No session notes recorded yet
+                  </p>
                 </div>
-              </ScrollArea>
-            ) : (
-              <div className="text-center py-6">
-                <StickyNote className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
-                <p className="text-xs text-muted-foreground">
-                  No session notes recorded yet
-                </p>
-              </div>
-            )}
+              )}
           </AccordionContent>
         </AccordionItem>
 
@@ -291,53 +302,58 @@ export const DocketSidebar = ({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-6">
-                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
-            ) : diaryEntries.length > 0 ? (
-              <div className="relative">
-                {/* Vertical timeline line */}
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
-
-                <div className="space-y-3">
-                  {diaryEntries.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex gap-3 items-start relative"
-                    >
-                      {/* Timeline dot */}
-                      <div className="w-[15px] flex justify-center pt-1.5 relative z-10">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(entry.created_at), "h:mm a")}
-                          </span>
-                          <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-sm font-medium">
-                            {entry.actor_name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {actionLabels[entry.action] || entry.action.toLowerCase().replace(/_/g, " ")}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {format(new Date(entry.created_at), "MMM dd, yyyy")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+            {isLoading
+              ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-6">
-                No activity recorded yet
-              </p>
-            )}
+              )
+              : diaryEntries.length > 0
+              ? (
+                <div className="relative">
+                  {/* Vertical timeline line */}
+                  <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
+
+                  <div className="space-y-3">
+                    {diaryEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex gap-3 items-start relative"
+                      >
+                        {/* Timeline dot */}
+                        <div className="w-[15px] flex justify-center pt-1.5 relative z-10">
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-1.5 flex-wrap">
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(entry.created_at), "h:mm a")}
+                            </span>
+                            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-sm font-medium">
+                              {entry.actor_name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {actionLabels[entry.action] ||
+                                entry.action.toLowerCase().replace(/_/g, " ")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {format(new Date(entry.created_at), "MMM dd, yyyy")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+              : (
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  No activity recorded yet
+                </p>
+              )}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

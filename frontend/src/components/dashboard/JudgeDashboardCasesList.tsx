@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CalendarIcon, Clock, FileText, ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarIcon, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,6 @@ type Case = {
   title: string;
   status: string;
   filing_date: string;
-  next_hearing_date: string | null;
 };
 
 interface JudgeDashboardCasesListProps {
@@ -42,13 +41,13 @@ export function JudgeDashboardCasesList({
   const handleSchedule = async (
     caseId: string,
     date: Date,
-    _time: string
+    _time: string,
   ) => {
     try {
+      // Hearing date scheduling planned for future implementation (session_logs table)
       const { error } = await supabase
         .from("cases")
         .update({
-          next_hearing_date: date.toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", caseId);
@@ -91,10 +90,8 @@ export function JudgeDashboardCasesList({
 
         <div className="space-y-3">
           {cases.map((caseItem) => {
-            const isScheduled = !!caseItem.next_hearing_date;
-            const scheduledDate = caseItem.next_hearing_date
-              ? new Date(caseItem.next_hearing_date)
-              : null;
+            const isScheduled = false; // Hearing scheduling planned for future
+            const scheduledDate = null; // Removed - use session_logs table in future
 
             return (
               <motion.div
@@ -126,7 +123,7 @@ export function JudgeDashboardCasesList({
                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                             : caseItem.status === "closed"
                             ? "bg-gray-500/10 text-gray-400 border-gray-500/20"
-                            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            : "bg-amber-500/10 text-amber-400 border-amber-500/20",
                         )}
                       >
                         {caseItem.status}
@@ -164,20 +161,22 @@ export function JudgeDashboardCasesList({
                       className={cn(
                         isScheduled
                           ? "border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                          : `bg-${roleTheme.primary} hover:opacity-90`
+                          : `bg-${roleTheme.primary} hover:opacity-90`,
                       )}
                     >
-                      {isScheduled ? (
-                        <>
-                          <CalendarIcon className="w-3 h-3 mr-1" />
-                          Postpone / Reschedule
-                        </>
-                      ) : (
-                        <>
-                          <CalendarIcon className="w-3 h-3 mr-1" />
-                          Schedule Hearing
-                        </>
-                      )}
+                      {isScheduled
+                        ? (
+                          <>
+                            <CalendarIcon className="w-3 h-3 mr-1" />
+                            Postpone / Reschedule
+                          </>
+                        )
+                        : (
+                          <>
+                            <CalendarIcon className="w-3 h-3 mr-1" />
+                            Schedule Hearing
+                          </>
+                        )}
                     </Button>
                     <Button
                       size="sm"
@@ -210,4 +209,3 @@ export function JudgeDashboardCasesList({
     </>
   );
 }
-

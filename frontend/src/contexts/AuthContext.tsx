@@ -22,7 +22,7 @@ type Profile = {
   email: string;
   full_name: string;
   role_category: RoleCategory;
-  unique_id: string | null;
+  phone: string | null;
 };
 
 type AuthContextType = {
@@ -30,13 +30,6 @@ type AuthContextType = {
   session: Session | null;
   profile: Profile | null;
   __devSetAuth?: (user: Partial<User>, profile: Profile) => void;
-  signUp: (
-    email: string,
-    password: string,
-    fullName: string,
-    roleCategory: RoleCategory,
-  ) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -96,35 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (
-    email: string,
-    password: string,
-    fullName: string,
-    roleCategory: RoleCategory,
-  ): Promise<{ error: Error | null }> => {
-    const redirectUrl = `${window.location.origin}/`;
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-          role_category: roleCategory,
-        },
-      },
-    });
-
-    if (error) {
-      toast.error(error.message);
-      return { error };
-    }
-
-    toast.success("Account created successfully!");
-    return { error: null };
-  };
-
   // Development helper to set a fake authenticated user/profile when backend
   // auth/profile creation is failing during local development. This helps
   // frontend work to continue while the backend is being fixed.
@@ -145,24 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  const signIn = async (
-    email: string,
-    password: string,
-  ): Promise<{ error: Error | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      return { error };
-    }
-
-    toast.success("Signed in successfully!");
-    return { error: null };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -175,8 +121,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     session,
     profile,
-    signUp,
-    signIn,
     signOut,
     __devSetAuth,
     isAuthenticated: !!user,

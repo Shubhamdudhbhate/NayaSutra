@@ -1,11 +1,9 @@
 // src/services/caseService.ts
-import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 import { CaseFile, CaseStatus } from '@/types/case';
 
-const STORAGE_KEY = 'nyaysutra-cases';
-
 /**
- * Creates a new case and stores it in localStorage
+ * Creates a new case and stores it in Supabase
  * @param data Case data without auto-generated fields
  * @returns The created case with all required fields
  * @throws Error if case creation fails
@@ -19,33 +17,46 @@ export const createCase = async (
       throw new Error('Missing required case fields');
     }
 
-    const newCase: CaseFile = {
-      ...data,
-      id: `case-${uuidv4()}`,
-      evidenceCount: 0,
-      status: 'open' as CaseStatus,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    const newCaseData = {
+      case_number: data.caseNumber,
+      unique_identifier: data.caseNumber,
+      title: data.title,
+      description: data.description || null,
+      case_type: (data.caseType === 'civil' || data.caseType === 'criminal' ? data.caseType : 'civil') as 'civil' | 'criminal',
+      status: 'pending' as const,
+      party_a_name: data.partyA || '',
+      party_b_name: data.partyB || '',
+      court_name: data.courtName || null,
     };
 
-    // Get existing cases
-    const cases = await getCases();
-    
-    // Check for duplicate case number
-    if (cases.some(c => c.caseNumber === data.caseNumber)) {
-      throw new Error(`Case with number ${data.caseNumber} already exists`);
+    const { data: insertedCase, error } = await supabase
+      .from('cases')
+      .insert([newCaseData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating case in Supabase:', error);
+      throw new Error(`Failed to create case: ${error.message}`);
     }
 
-    // Save to localStorage
-    try {
-      const updatedCases = [...cases, newCase];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCases));
-    } catch (error) {
-      console.error('Failed to save case to localStorage:', error);
-      throw new Error('Failed to save case');
-    }
+    // Map from database format to frontend format
+    const result: CaseFile = {
+      id: insertedCase.id,
+      caseNumber: insertedCase.case_number,
+      title: insertedCase.title,
+      description: insertedCase.description || '',
+      caseType: insertedCase.case_type,
+      courtName: insertedCase.court_name || undefined,
+      partyA: insertedCase.party_a_name,
+      partyB: insertedCase.party_b_name,
+      status: 'open' as CaseStatus,
+      evidenceCount: 0,
+      createdAt: insertedCase.created_at,
+      updatedAt: insertedCase.updated_at,
+    };
 
-    return newCase;
+    return result;
   } catch (error) {
     console.error('Error creating case:', error);
     throw error;
@@ -53,13 +64,36 @@ export const createCase = async (
 };
 
 /**
- * Retrieves all cases from localStorage
+ * Retrieves all cases from Supabase
  * @returns Array of cases
  */
 export const getCases = async (): Promise<CaseFile[]> => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    const { data, error } = await supabase
+      .from('cases')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching cases from Supabase:', error);
+      return [];
+    }
+
+    // Map from database format to frontend format
+    return (data || []).map(c => ({
+      id: c.id,
+      caseNumber: c.case_number,
+      title: c.title,
+      description: c.description || '',
+      caseType: c.case_type,
+      courtName: c.court_name || undefined,
+      partyA: c.party_a_name,
+      partyB: c.party_b_name,
+      status: 'open' as CaseStatus,
+      evidenceCount: 0,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+    }));
   } catch (error) {
     console.error('Error retrieving cases:', error);
     return [];
@@ -77,8 +111,32 @@ export const getCaseById = async (id: string): Promise<CaseFile | undefined> => 
   }
   
   try {
-    const cases = await getCases();
-    return cases.find((c: CaseFile) => c.id === id);
+    const { data, error } = await supabase
+      .from('cases')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      console.error(`Error retrieving case ${id}:`, error);
+      return undefined;
+    }
+
+    // Map from database format to frontend format
+    return {
+      id: data.id,
+      caseNumber: data.case_number,
+      title: data.title,
+      description: data.description || '',
+      caseType: data.case_type,
+      courtName: data.court_name || undefined,
+      partyA: data.party_a_name,
+      partyB: data.party_b_name,
+      status: 'open' as CaseStatus,
+      evidenceCount: 0,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
   } catch (error) {
     console.error(`Error retrieving case ${id}:`, error);
     throw error;
@@ -96,30 +154,43 @@ export const updateCase = async (
   updates: Partial<Omit<CaseFile, 'id' | 'createdAt' | 'evidenceCount'>>
 ): Promise<CaseFile> => {
   try {
-    const cases = await getCases();
-    const index = cases.findIndex(c => c.id === id);
+    const updateData: Record<string, any> = {};
     
-    if (index === -1) {
-      throw new Error(`Case with ID ${id} not found`);
+    if (updates.caseNumber) updateData.case_number = updates.caseNumber;
+    if (updates.title) updateData.title = updates.title;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.caseType) updateData.case_type = updates.caseType;
+    if (updates.courtName !== undefined) updateData.court_name = updates.courtName;
+    if (updates.partyA) updateData.party_a_name = updates.partyA;
+    if (updates.partyB) updateData.party_b_name = updates.partyB;
+
+    const { data, error } = await supabase
+      .from('cases')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !data) {
+      console.error(`Error updating case ${id}:`, error);
+      throw new Error(`Failed to update case: ${error?.message}`);
     }
 
-    const updatedCase = {
-      ...cases[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
+    // Map from database format to frontend format
+    return {
+      id: data.id,
+      caseNumber: data.case_number,
+      title: data.title,
+      description: data.description || '',
+      caseType: data.case_type,
+      courtName: data.court_name || undefined,
+      partyA: data.party_a_name,
+      partyB: data.party_b_name,
+      status: 'open' as CaseStatus,
+      evidenceCount: 0,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
     };
-
-    // Check for duplicate case number
-    if (updates.caseNumber && cases.some((c, i) => 
-      i !== index && c.caseNumber === updates.caseNumber
-    )) {
-      throw new Error(`Case with number ${updates.caseNumber} already exists`);
-    }
-
-    cases[index] = updatedCase;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
-    
-    return updatedCase;
   } catch (error) {
     console.error(`Error updating case ${id}:`, error);
     throw error;
@@ -133,14 +204,16 @@ export const updateCase = async (
  */
 export const deleteCase = async (id: string): Promise<boolean> => {
   try {
-    const cases = await getCases();
-    const filteredCases = cases.filter(c => c.id !== id);
-    
-    if (cases.length === filteredCases.length) {
-      return false; // No case was deleted
+    const { error } = await supabase
+      .from('cases')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error(`Error deleting case ${id}:`, error);
+      throw new Error(`Failed to delete case: ${error.message}`);
     }
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredCases));
+
     return true;
   } catch (error) {
     console.error(`Error deleting case ${id}:`, error);

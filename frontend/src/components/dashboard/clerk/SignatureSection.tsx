@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Bell, Gavel, Scale, Loader2, Clock } from "lucide-react";
+import { Bell, Check, Clock, Gavel, Loader2, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -9,12 +9,6 @@ type CaseData = {
   id: string;
   case_number: string;
   title: string;
-  assigned_judge_id?: string | null;
-  assigned_judge?: { full_name: string } | null;
-  lawyer_party_a_id?: string | null;
-  lawyer_party_a?: { full_name: string } | null;
-  lawyer_party_b_id?: string | null;
-  lawyer_party_b?: { full_name: string } | null;
 };
 
 interface SignatureSectionProps {
@@ -56,7 +50,9 @@ export const SignatureSection = ({
   lawyerASignature,
   lawyerBSignature,
 }: SignatureSectionProps) => {
-  const [sendingNotification, setSendingNotification] = useState<SignatureRole | null>(null);
+  const [sendingNotification, setSendingNotification] = useState<
+    SignatureRole | null
+  >(null);
 
   const getSignature = (role: SignatureRole) => {
     switch (role) {
@@ -72,23 +68,17 @@ export const SignatureSection = ({
   const getName = (role: SignatureRole) => {
     switch (role) {
       case "judge":
-        return caseData.assigned_judge?.full_name || "Assigned Judge";
+        return "Judge";
       case "lawyerA":
-        return caseData.lawyer_party_a?.full_name || "Lawyer (Party A)";
+        return "Lawyer (Party A)";
       case "lawyerB":
-        return caseData.lawyer_party_b?.full_name || "Lawyer (Party B)";
+        return "Lawyer (Party B)";
     }
   };
 
   const isAssigned = (role: SignatureRole) => {
-    switch (role) {
-      case "judge":
-        return !!caseData.assigned_judge_id;
-      case "lawyerA":
-        return !!caseData.lawyer_party_a_id;
-      case "lawyerB":
-        return !!caseData.lawyer_party_b_id;
-    }
+    // Assignment fields removed - show placeholder
+    return false;
   };
 
   const handleSendNotification = async (role: SignatureRole) => {
@@ -98,14 +88,14 @@ export const SignatureSection = ({
     }
 
     setSendingNotification(role);
-    
+
     // Simulate sending notification
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    
+
     toast.success(`Signature request sent to ${getName(role)}`, {
       description: "They will receive a notification to sign the case.",
     });
-    
+
     setSendingNotification(null);
   };
 
@@ -123,51 +113,60 @@ export const SignatureSection = ({
         className={cn(
           "p-4 rounded-lg border-2",
           signature ? "border-emerald-500/30 bg-emerald-500/5" : config.border,
-          config.bg
+          config.bg,
         )}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <Icon className={cn("w-5 h-5", signature ? "text-emerald-500" : config.color)} />
+            <Icon
+              className={cn(
+                "w-5 h-5",
+                signature ? "text-emerald-500" : config.color,
+              )}
+            />
             <div>
               <p className="font-medium">{config.label}</p>
               <p className="text-sm text-muted-foreground">{name}</p>
             </div>
           </div>
-          
-          {signature ? (
-            <div className="flex items-center gap-2 text-emerald-500">
-              <Check className="w-4 h-4" />
-              <span className="text-sm font-medium">Signed</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-amber-500">
-                <Clock className="w-4 h-4" />
-                <span className="text-sm">Pending</span>
+
+          {signature
+            ? (
+              <div className="flex items-center gap-2 text-emerald-500">
+                <Check className="w-4 h-4" />
+                <span className="text-sm font-medium">Signed</span>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleSendNotification(role)}
-                disabled={!assigned || sendingNotification === role}
-              >
-                {sendingNotification === role ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <>
-                    <Bell className="w-3 h-3 mr-1" />
-                    Notify
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
+            )
+            : (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-amber-500">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">Pending</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSendNotification(role)}
+                  disabled={!assigned || sendingNotification === role}
+                >
+                  {sendingNotification === role
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : (
+                      <>
+                        <Bell className="w-3 h-3 mr-1" />
+                        Notify
+                      </>
+                    )}
+                </Button>
+              </div>
+            )}
         </div>
-        
+
         {signature && (
           <div className="mt-3 pt-3 border-t border-border/50">
-            <p className="text-xs text-muted-foreground mb-1">Digital Signature</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              Digital Signature
+            </p>
             <p className="font-serif italic text-lg">{signature}</p>
           </div>
         )}
@@ -182,7 +181,8 @@ export const SignatureSection = ({
   };
 
   const allSigned = judgeSignature && lawyerASignature && lawyerBSignature;
-  const signedCount = [judgeSignature, lawyerASignature, lawyerBSignature].filter(Boolean).length;
+  const signedCount =
+    [judgeSignature, lawyerASignature, lawyerBSignature].filter(Boolean).length;
 
   return (
     <div className="space-y-4">
@@ -195,9 +195,10 @@ export const SignatureSection = ({
           {signedCount}/3 collected
         </span>
       </div>
-      
+
       <p className="text-sm text-muted-foreground mb-4">
-        Send signature requests to the Judge and Lawyers. They will sign from their respective dashboards.
+        Send signature requests to the Judge and Lawyers. They will sign from
+        their respective dashboards.
       </p>
 
       {/* Signature Cards */}
@@ -215,8 +216,12 @@ export const SignatureSection = ({
           className="mt-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center"
         >
           <Check className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-          <p className="font-medium text-emerald-500">All Signatures Collected</p>
-          <p className="text-sm text-muted-foreground">Ready to submit to IPFS</p>
+          <p className="font-medium text-emerald-500">
+            All Signatures Collected
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Ready to submit to IPFS
+          </p>
         </motion.div>
       )}
     </div>

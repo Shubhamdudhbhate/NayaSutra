@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Scale, RefreshCw, Users } from "lucide-react";
+import { RefreshCw, Scale, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -102,8 +102,12 @@ export const CreateCaseDialog = ({
     setCaseNumber(generateCaseNumber(sectionId));
   };
 
-  const judiciaryProfiles = profiles.filter((p) => p.role_category === "judiciary");
-  const legalProfiles = profiles.filter((p) => p.role_category === "legal_practitioner");
+  const judiciaryProfiles = profiles.filter((p) =>
+    p.role_category === "judiciary"
+  );
+  const legalProfiles = profiles.filter((p) =>
+    p.role_category === "legal_practitioner"
+  );
 
   const onSubmit = async (data: CaseFormValues) => {
     try {
@@ -113,7 +117,9 @@ export const CreateCaseDialog = ({
       const requiredIds = [data.judgeId, data.clerkId];
       const existing = profiles.filter((p) => requiredIds.includes(p.id));
       if (existing.length !== 2) {
-        throw new Error("Please select Judge and Clerk from the dropdowns (registered users).");
+        throw new Error(
+          "Please select Judge and Clerk from the dropdowns (registered users).",
+        );
       }
 
       // Insert case using the new schema
@@ -127,7 +133,7 @@ export const CreateCaseDialog = ({
           case_type: "civil" as const,
           party_a_name: data.plaintiffName.trim(),
           party_b_name: data.defendantName.trim(),
-          assigned_judge_id: data.judgeId,
+          court_name: data.court || null,
           status: "pending" as const,
         });
 
@@ -139,7 +145,9 @@ export const CreateCaseDialog = ({
       onCaseCreated();
     } catch (error) {
       console.error("Error creating case:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create case");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create case",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +225,8 @@ export const CreateCaseDialog = ({
             <div className="space-y-2">
               <Label>Presiding Judge *</Label>
               <Select
-                onValueChange={(v) => form.setValue("judgeId", v, { shouldValidate: true })}
+                onValueChange={(v) =>
+                  form.setValue("judgeId", v, { shouldValidate: true })}
                 value={form.watch("judgeId")}
               >
                 <SelectTrigger className="bg-secondary/30 border-white/10">
@@ -242,7 +251,8 @@ export const CreateCaseDialog = ({
             <div className="space-y-2">
               <Label>Court Clerk *</Label>
               <Select
-                onValueChange={(v) => form.setValue("clerkId", v, { shouldValidate: true })}
+                onValueChange={(v) =>
+                  form.setValue("clerkId", v, { shouldValidate: true })}
                 value={form.watch("clerkId")}
               >
                 <SelectTrigger className="bg-secondary/30 border-white/10">

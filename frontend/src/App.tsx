@@ -36,6 +36,8 @@ import NotFound from "./pages/NotFound";
 import PoliceDashboard from "./pages/police/Dashboard";
 import NewFIR from "./pages/police/NewFIR";
 import FIRDetails from "./pages/police/FIRDetails";
+// Admin pages
+import AdminWallet from "./pages/admin/AdminWallet";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -133,6 +135,13 @@ const routes: RouteObject[] = [
       { path: "/courts/:courtId/sections", element: <Sections /> },
       { path: "/sections/:sectionId/blocks", element: <CaseBlocks /> },
       { path: "/cases/:id", element: <CaseDetails /> },
+      {
+        path: "/admin",
+        children: [
+          { path: "", element: <Navigate to="wallet" replace /> },
+          { path: "wallet", element: <AdminWallet /> },
+        ],
+      },
       {
         path: "/police",
         element: <PoliceProtected />,

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Play, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +23,6 @@ type DbCase = {
   party_a_name: string;
   party_b_name: string;
   court_name: string | null;
-  assigned_judge_id: string | null;
-  lawyer_party_a_id: string | null;
-  lawyer_party_b_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -68,44 +65,6 @@ const CaseDetails = () => {
       }
 
       setCaseData(caseResult);
-
-      // Fetch judge name if assigned
-      if (caseResult.assigned_judge_id) {
-        const { data: judgeProfile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", caseResult.assigned_judge_id)
-          .maybeSingle();
-        
-        if (judgeProfile) {
-          setJudgeName(judgeProfile.full_name);
-        }
-      }
-
-      // Fetch lawyer names if assigned
-      if (caseResult.lawyer_party_a_id) {
-        const { data: lawyerAProfile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", caseResult.lawyer_party_a_id)
-          .maybeSingle();
-        
-        if (lawyerAProfile) {
-          setLawyerAName(lawyerAProfile.full_name);
-        }
-      }
-
-      if (caseResult.lawyer_party_b_id) {
-        const { data: lawyerBProfile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", caseResult.lawyer_party_b_id)
-          .maybeSingle();
-        
-        if (lawyerBProfile) {
-          setLawyerBName(lawyerBProfile.full_name);
-        }
-      }
     } catch (error) {
       console.error("Error loading case:", error);
       toast.error("Failed to load case data");
@@ -142,18 +101,18 @@ const CaseDetails = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'closed':
-        return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
-      case 'pending':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'hearing':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'verdict_pending':
-        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case "active":
+        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      case "closed":
+        return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+      case "pending":
+        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      case "hearing":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      case "verdict_pending":
+        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
       default:
-        return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+        return "bg-slate-500/10 text-slate-400 border-slate-500/20";
     }
   };
 
@@ -171,7 +130,6 @@ const CaseDetails = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
 
-          
           <div>
             <code className="text-sm font-mono text-muted-foreground">
               {caseData.case_number}
@@ -210,8 +168,12 @@ const CaseDetails = () => {
                     {caseData.unique_identifier}
                   </p>
                 </div>
-                <Badge variant="outline" className={getStatusColor(caseData.status)}>
-                  {caseData.status.charAt(0).toUpperCase() + caseData.status.slice(1).replace('_', ' ')}
+                <Badge
+                  variant="outline"
+                  className={getStatusColor(caseData.status)}
+                >
+                  {caseData.status.charAt(0).toUpperCase() +
+                    caseData.status.slice(1).replace("_", " ")}
                 </Badge>
               </div>
             </CardHeader>
@@ -249,7 +211,8 @@ const CaseDetails = () => {
                   <p className="font-medium">{caseData.party_a_name}</p>
                   {lawyerAName && (
                     <p className="text-sm text-muted-foreground">
-                      Lawyer: <span className="text-foreground">{lawyerAName}</span>
+                      Lawyer:{" "}
+                      <span className="text-foreground">{lawyerAName}</span>
                     </p>
                   )}
                 </div>
@@ -260,7 +223,8 @@ const CaseDetails = () => {
                   <p className="font-medium">{caseData.party_b_name}</p>
                   {lawyerBName && (
                     <p className="text-sm text-muted-foreground">
-                      Lawyer: <span className="text-foreground">{lawyerBName}</span>
+                      Lawyer:{" "}
+                      <span className="text-foreground">{lawyerBName}</span>
                     </p>
                   )}
                 </div>
@@ -283,10 +247,16 @@ const CaseDetails = () => {
           {/* Evidence Section (Placeholder) */}
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList className="bg-card border border-border">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-secondary">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-secondary"
+              >
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="evidence" className="data-[state=active]:bg-secondary">
+              <TabsTrigger
+                value="evidence"
+                className="data-[state=active]:bg-secondary"
+              >
                 <Shield className="w-4 h-4 mr-2" />
                 Evidence
               </TabsTrigger>
@@ -304,8 +274,12 @@ const CaseDetails = () => {
               <Card className="border-border/50">
                 <CardContent className="py-8 text-center text-muted-foreground">
                   <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="mb-2">Evidence management will be available soon.</p>
-                  <p className="text-sm">The evidence table needs to be created first.</p>
+                  <p className="mb-2">
+                    Evidence management will be available soon.
+                  </p>
+                  <p className="text-sm">
+                    The evidence table needs to be created first.
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -313,8 +287,12 @@ const CaseDetails = () => {
 
           {/* Timestamps */}
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Created: {new Date(caseData.created_at).toLocaleString('en-IN')}</span>
-            <span>Updated: {new Date(caseData.updated_at).toLocaleString('en-IN')}</span>
+            <span>
+              Created: {new Date(caseData.created_at).toLocaleString("en-IN")}
+            </span>
+            <span>
+              Updated: {new Date(caseData.updated_at).toLocaleString("en-IN")}
+            </span>
           </div>
         </div>
       </div>

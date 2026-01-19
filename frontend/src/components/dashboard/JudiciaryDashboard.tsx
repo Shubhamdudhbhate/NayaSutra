@@ -148,16 +148,15 @@ export const JudiciaryDashboard = () => {
       if (!profile?.id) return;
 
       try {
-        // Fetch cases assigned to this judge that need signature
+        // Fetch cases with statuses that need attention
         const { data: cases } = await supabase
           .from("cases")
           .select("id, case_number, title, status, created_at")
-          .eq("assigned_judge_id", profile.id)
           .in("status", ["active", "hearing", "verdict_pending"])
           .limit(10);
 
         if (cases) {
-          // For demo purposes, show all assigned active cases as pending signatures
+          // Show active/hearing cases for judiciary dashboard
           setPendingSignatures(
             cases.map((c) => ({
               ...c,

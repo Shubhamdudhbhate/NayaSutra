@@ -16,7 +16,6 @@ export type Database = {
     Tables: {
       cases: {
         Row: {
-          assigned_judge_id: string | null
           case_number: string
           case_type: Database["public"]["Enums"]["case_type"]
           court_name: string | null
@@ -24,8 +23,6 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          lawyer_party_a_id: string | null
-          lawyer_party_b_id: string | null
           party_a_name: string
           party_b_name: string
           status: Database["public"]["Enums"]["case_status"]
@@ -34,7 +31,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          assigned_judge_id?: string | null
           case_number: string
           case_type: Database["public"]["Enums"]["case_type"]
           court_name?: string | null
@@ -42,8 +38,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          lawyer_party_a_id?: string | null
-          lawyer_party_b_id?: string | null
           party_a_name: string
           party_b_name: string
           status?: Database["public"]["Enums"]["case_status"]
@@ -52,7 +46,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          assigned_judge_id?: string | null
           case_number?: string
           case_type?: Database["public"]["Enums"]["case_type"]
           court_name?: string | null
@@ -60,8 +53,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          lawyer_party_a_id?: string | null
-          lawyer_party_b_id?: string | null
           party_a_name?: string
           party_b_name?: string
           status?: Database["public"]["Enums"]["case_status"]
@@ -71,29 +62,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "cases_assigned_judge_id_fkey"
-            columns: ["assigned_judge_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cases_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cases_lawyer_party_a_id_fkey"
-            columns: ["lawyer_party_a_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cases_lawyer_party_b_id_fkey"
-            columns: ["lawyer_party_b_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -106,30 +76,39 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          phone: string | null
           role_category: string
-          unique_id: string | null
           updated_at: string
           user_id: string
+          wallet_address: string | null
+          is_wallet_verified: boolean
+          wallet_verified_at: string | null
         }
         Insert: {
           created_at?: string
           email?: string | null
           full_name: string
           id?: string
+          phone?: string | null
           role_category?: string
-          unique_id?: string | null
           updated_at?: string
           user_id: string
+          wallet_address?: string | null
+          is_wallet_verified?: boolean
+          wallet_verified_at?: string | null
         }
         Update: {
           created_at?: string
           email?: string | null
           full_name?: string
           id?: string
+          phone?: string | null
           role_category?: string
-          unique_id?: string | null
           updated_at?: string
           user_id?: string
+          wallet_address?: string | null
+          is_wallet_verified?: boolean
+          wallet_verified_at?: string | null
         }
         Relationships: []
       }
@@ -230,12 +209,68 @@ export type Database = {
           }
         ]
       }
+      wallet_audit_log: {
+        Row: {
+          id: string
+          profile_id: string
+          action: string
+          old_value: string | null
+          new_value: string | null
+          changed_by: string | null
+          changed_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          action: string
+          old_value?: string | null
+          new_value?: string | null
+          changed_by?: string | null
+          changed_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          action?: string
+          old_value?: string | null
+          new_value?: string | null
+          changed_by?: string | null
+          changed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      verify_wallet_authorization: {
+        Args: {
+          p_wallet_address: string
+          p_role_category: string
+        }
+        Returns: Array<{
+          is_authorized: boolean
+          profile_id: string
+          full_name: string
+          role_category: string
+        }>
+      }
     }
     Enums: {
       case_status:

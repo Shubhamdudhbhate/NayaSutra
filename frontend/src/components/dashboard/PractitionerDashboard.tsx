@@ -1,13 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  Scale,
-  Upload,
-  FileText,
-  Calendar,
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight, Calendar, FileText, Scale, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -62,11 +56,11 @@ export const PractitionerDashboard = () => {
     if (!profile?.id) return;
 
     try {
-      // Fetch cases where user is assigned as lawyer
+      // Fetch all active cases (lawyer assignment removed - use case matching instead)
       const { data: casesData } = await supabase
         .from("cases")
         .select("id, case_number, title, status, created_at")
-        .or(`lawyer_party_a_id.eq.${profile.id},lawyer_party_b_id.eq.${profile.id}`)
+        .in("status", ["pending", "active", "hearing"])
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -82,11 +76,10 @@ export const PractitionerDashboard = () => {
     if (!profile?.id) return;
 
     try {
-      // Fetch cases where this lawyer is assigned and case is active
+      // Fetch active/hearing cases (lawyer assignment column removed)
       const { data: casesData } = await supabase
         .from("cases")
         .select("id, case_number, title, status, created_at")
-        .or(`lawyer_party_a_id.eq.${profile.id},lawyer_party_b_id.eq.${profile.id}`)
         .in("status", ["active", "hearing", "verdict_pending"])
         .limit(10);
 
@@ -95,7 +88,7 @@ export const PractitionerDashboard = () => {
           casesData.map((c) => ({
             ...c,
             requested_at: c.created_at,
-          }))
+          })),
         );
       }
     } catch (error) {
@@ -106,10 +99,10 @@ export const PractitionerDashboard = () => {
   const handleLawyerSign = async (caseId: string, signature: string) => {
     // In a real app, this would update the database
     console.log("Lawyer signed case:", caseId, "with signature:", signature);
-    
+
     // Remove from pending list
     setPendingSignatures((prev) => prev.filter((c) => c.id !== caseId));
-    
+
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
@@ -154,45 +147,49 @@ export const PractitionerDashboard = () => {
             </h3>
           </div>
 
-          {uploadTrackers.length === 0 ? (
-            <div className="text-center py-8">
-              <Upload className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground mb-3">
-                No active uploads
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/courts")}
-              >
-                Start Upload
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {uploadTrackers.map((tracker, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="p-4 rounded-lg bg-secondary/30 border border-white/5"
+          {uploadTrackers.length === 0
+            ? (
+              <div className="text-center py-8">
+                <Upload className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground mb-3">
+                  No active uploads
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/courts")}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{tracker.fileName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {tracker.caseTitle}
-                      </p>
+                  Start Upload
+                </Button>
+              </div>
+            )
+            : (
+              <div className="space-y-4">
+                {uploadTrackers.map((tracker, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="p-4 rounded-lg bg-secondary/30 border border-white/5"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">
+                          {tracker.fileName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {tracker.caseTitle}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {tracker.status}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {tracker.status}
-                    </Badge>
-                  </div>
-                  <Progress value={tracker.progress} className="h-2" />
-                </motion.div>
-              ))}
-            </div>
-          )}
+                    <Progress value={tracker.progress} className="h-2" />
+                  </motion.div>
+                ))}
+              </div>
+            )}
         </GlassCard>
 
         {/* Pending Signatures */}
@@ -208,53 +205,57 @@ export const PractitionerDashboard = () => {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className={cn("w-5 h-5", `text-${roleTheme.primary}`)} />
+              <Calendar
+                className={cn("w-5 h-5", `text-${roleTheme.primary}`)}
+              />
               Recent Cases
             </h3>
           </div>
 
-          {cases.length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                No cases assigned yet
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {cases.slice(0, 5).map((caseItem) => (
-                <motion.button
-                  key={caseItem.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => navigate(`/cases/${caseItem.id}`)}
-                  className="w-full p-3 rounded-lg bg-secondary/30 border border-white/5 hover:border-white/10 transition-all text-left group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm group-hover:text-primary transition-colors">
-                        {caseItem.title}
-                      </p>
-                      <p className="text-xs font-mono text-muted-foreground mt-1">
-                        {caseItem.case_number}
-                      </p>
+          {cases.length === 0
+            ? (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No cases assigned yet
+                </p>
+              </div>
+            )
+            : (
+              <div className="space-y-3">
+                {cases.slice(0, 5).map((caseItem) => (
+                  <motion.button
+                    key={caseItem.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={() => navigate(`/cases/${caseItem.id}`)}
+                    className="w-full p-3 rounded-lg bg-secondary/30 border border-white/5 hover:border-white/10 transition-all text-left group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm group-hover:text-primary transition-colors">
+                          {caseItem.title}
+                        </p>
+                        <p className="text-xs font-mono text-muted-foreground mt-1">
+                          {caseItem.case_number}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs",
+                          caseItem.status === "active"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                        )}
+                      >
+                        {caseItem.status}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs",
-                        caseItem.status === "active"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                      )}
-                    >
-                      {caseItem.status}
-                    </Badge>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-          )}
+                  </motion.button>
+                ))}
+              </div>
+            )}
         </GlassCard>
       </div>
 
@@ -275,54 +276,58 @@ export const PractitionerDashboard = () => {
           </Button>
         </div>
 
-        {cases.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground mb-3">
-              No cases assigned yet
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/courts")}
-            >
-              Browse Courts
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cases.slice(0, 6).map((caseItem) => (
-              <motion.button
-                key={caseItem.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onClick={() => navigate(`/cases/${caseItem.id}`)}
-                className="p-4 rounded-lg bg-secondary/30 border border-white/5 hover:border-white/10 transition-all text-left group"
+        {cases.length === 0
+          ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">
+                No cases assigned yet
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/courts")}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <FileText className={cn("w-5 h-5", `text-${roleTheme.primary}/50`)} />
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs",
-                      caseItem.status === "active"
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                    )}
-                  >
-                    {caseItem.status}
-                  </Badge>
-                </div>
-                <p className="font-medium text-sm group-hover:text-primary transition-colors mb-1">
-                  {caseItem.title}
-                </p>
-                <p className="text-xs font-mono text-muted-foreground">
-                  {caseItem.case_number}
-                </p>
-              </motion.button>
-            ))}
-          </div>
-        )}
+                Browse Courts
+              </Button>
+            </div>
+          )
+          : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {cases.slice(0, 6).map((caseItem) => (
+                <motion.button
+                  key={caseItem.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={() => navigate(`/cases/${caseItem.id}`)}
+                  className="p-4 rounded-lg bg-secondary/30 border border-white/5 hover:border-white/10 transition-all text-left group"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <FileText
+                      className={cn("w-5 h-5", `text-${roleTheme.primary}/50`)}
+                    />
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs",
+                        caseItem.status === "active"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                      )}
+                    >
+                      {caseItem.status}
+                    </Badge>
+                  </div>
+                  <p className="font-medium text-sm group-hover:text-primary transition-colors mb-1">
+                    {caseItem.title}
+                  </p>
+                  <p className="text-xs font-mono text-muted-foreground">
+                    {caseItem.case_number}
+                  </p>
+                </motion.button>
+              ))}
+            </div>
+          )}
       </GlassCard>
     </div>
   );

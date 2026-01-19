@@ -23,8 +23,8 @@ export const ClerkDashboard = () => {
     if (!manageCaseId) return;
     setIsLoading(true);
     const { data, error } = await supabase
-      .from('cases')
-      .select('*, assigned_judge:assigned_judge_id(full_name)')
+      .from("cases")
+      .select("*")
       .or(`case_number.eq.${manageCaseId},unique_identifier.eq.${manageCaseId}`)
       .maybeSingle();
 
@@ -65,28 +65,36 @@ export const ClerkDashboard = () => {
         </TabsContent>
 
         <TabsContent value="manage">
-          {!activeCaseData ? (
-            <div className="p-8 border rounded-lg bg-secondary/10 text-center space-y-4">
-              <h3 className="text-lg font-medium">Load Case to Manage</h3>
-              <div className="flex max-w-md mx-auto gap-2">
-                <Input 
-                  placeholder="Enter Case Number (e.g. CASE-2026-001)" 
-                  value={manageCaseId}
-                  onChange={(e) => setManageCaseId(e.target.value)}
-                />
-                <Button onClick={fetchCaseToManage} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <Search className="w-4 h-4" />}
-                </Button>
+          {!activeCaseData
+            ? (
+              <div className="p-8 border rounded-lg bg-secondary/10 text-center space-y-4">
+                <h3 className="text-lg font-medium">Load Case to Manage</h3>
+                <div className="flex max-w-md mx-auto gap-2">
+                  <Input
+                    placeholder="Enter Case Number (e.g. CASE-2026-001)"
+                    value={manageCaseId}
+                    onChange={(e) => setManageCaseId(e.target.value)}
+                  />
+                  <Button onClick={fetchCaseToManage} disabled={isLoading}>
+                    {isLoading
+                      ? <Loader2 className="animate-spin" />
+                      : <Search className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div>
-              <Button variant="ghost" onClick={() => setActiveCaseData(null)} className="mb-4">
-                 Change Case
-              </Button>
-              <CaseManagementPanel caseData={activeCaseData} />
-            </div>
-          )}
+            )
+            : (
+              <div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveCaseData(null)}
+                  className="mb-4"
+                >
+                  Change Case
+                </Button>
+                <CaseManagementPanel caseData={activeCaseData} />
+              </div>
+            )}
         </TabsContent>
       </Tabs>
     </div>

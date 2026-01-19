@@ -1,14 +1,14 @@
 import { motion } from "framer-motion";
 import {
-  BarChart3,
-  FileText,
-  Users,
-  Clock,
-  CheckCircle2,
   AlertCircle,
-  TrendingUp,
+  BarChart3,
   Briefcase,
+  CheckCircle2,
+  Clock,
+  FileText,
   Search,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,8 +35,8 @@ const ProfessionalDashboard = () => {
     if (!manageCaseId) return;
     setIsLoading(true);
     const { data, error } = await supabase
-      .from('cases')
-      .select('*, assigned_judge:assigned_judge_id(full_name)')
+      .from("cases")
+      .select("*")
       .or(`case_number.eq.${manageCaseId},unique_identifier.eq.${manageCaseId}`)
       .maybeSingle();
 
@@ -86,7 +86,10 @@ const ProfessionalDashboard = () => {
               Clerk Dashboard
             </h1>
             <p className="text-slate-400">
-              Welcome back, <span className="font-semibold text-slate-200">{profile?.full_name}</span>
+              Welcome back,{" "}
+              <span className="font-semibold text-slate-200">
+                {profile?.full_name}
+              </span>
             </p>
           </div>
 
@@ -98,21 +101,21 @@ const ProfessionalDashboard = () => {
           >
             <Tabs defaultValue="register" className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-8 bg-white/5 border border-white/10 p-1">
-                <TabsTrigger 
+                <TabsTrigger
                   value="register"
                   className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Register Case
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="search"
                   className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300"
                 >
                   <Search className="w-4 h-4 mr-2" />
                   Search Case
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="manage"
                   className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300"
                 >
@@ -147,38 +150,44 @@ const ProfessionalDashboard = () => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  {!activeCaseData ? (
-                    <div className="p-8 border border-cyan-500/30 rounded-xl bg-cyan-500/5 text-center space-y-4">
-                      <Briefcase className="w-12 h-12 text-cyan-400 mx-auto" />
-                      <h3 className="text-lg font-medium text-white">Load Case to Manage</h3>
-                      <div className="flex max-w-md mx-auto gap-2">
-                        <Input 
-                          placeholder="Enter Case Number (e.g. CASE-2026-001)" 
-                          value={manageCaseId}
-                          onChange={(e) => setManageCaseId(e.target.value)}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
-                        />
-                        <Button 
-                          onClick={fetchCaseToManage} 
-                          disabled={isLoading}
-                          className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                        >
-                          {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" />}
-                        </Button>
+                  {!activeCaseData
+                    ? (
+                      <div className="p-8 border border-cyan-500/30 rounded-xl bg-cyan-500/5 text-center space-y-4">
+                        <Briefcase className="w-12 h-12 text-cyan-400 mx-auto" />
+                        <h3 className="text-lg font-medium text-white">
+                          Load Case to Manage
+                        </h3>
+                        <div className="flex max-w-md mx-auto gap-2">
+                          <Input
+                            placeholder="Enter Case Number (e.g. CASE-2026-001)"
+                            value={manageCaseId}
+                            onChange={(e) => setManageCaseId(e.target.value)}
+                            className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+                          />
+                          <Button
+                            onClick={fetchCaseToManage}
+                            disabled={isLoading}
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                          >
+                            {isLoading
+                              ? <Loader2 className="animate-spin w-4 h-4" />
+                              : <Search className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => setActiveCaseData(null)} 
-                        className="mb-4 text-cyan-400 hover:text-cyan-300"
-                      >
-                        ← Change Case
-                      </Button>
-                      <CaseManagementPanel caseData={activeCaseData} />
-                    </div>
-                  )}
+                    )
+                    : (
+                      <div>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setActiveCaseData(null)}
+                          className="mb-4 text-cyan-400 hover:text-cyan-300"
+                        >
+                          ← Change Case
+                        </Button>
+                        <CaseManagementPanel caseData={activeCaseData} />
+                      </div>
+                    )}
                 </motion.div>
               </TabsContent>
             </Tabs>
@@ -252,7 +261,10 @@ const ProfessionalDashboard = () => {
                 {getRoleTitle()}
               </h1>
               <p className="text-slate-400">
-                Welcome back, <span className="font-semibold text-slate-200">{profile?.full_name}</span>
+                Welcome back,{" "}
+                <span className="font-semibold text-slate-200">
+                  {profile?.full_name}
+                </span>
               </p>
             </div>
           </div>
@@ -330,11 +342,11 @@ const ProfessionalDashboard = () => {
                     <p className="text-white font-medium">{activity.title}</p>
                     <p className="text-xs text-slate-400">{activity.time}</p>
                   </div>
-                  {activity.status === "completed" ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  ) : (
-                    <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse" />
-                  )}
+                  {activity.status === "completed"
+                    ? <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    : (
+                      <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse" />
+                    )}
                 </div>
               ))}
             </div>
@@ -353,7 +365,9 @@ const ProfessionalDashboard = () => {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-slate-400">Case Completion</span>
+                  <span className="text-sm text-slate-400">
+                    Case Completion
+                  </span>
                   <span className="text-sm font-semibold text-white">80%</span>
                 </div>
                 <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -363,7 +377,9 @@ const ProfessionalDashboard = () => {
 
               <div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-slate-400">On-time Filings</span>
+                  <span className="text-sm text-slate-400">
+                    On-time Filings
+                  </span>
                   <span className="text-sm font-semibold text-white">95%</span>
                 </div>
                 <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -404,8 +420,9 @@ const ProfessionalDashboard = () => {
                 Enterprise-Grade Security
               </h3>
               <p className="text-sm text-slate-400">
-                All your data is encrypted with blockchain verification and immutable audit trails.
-                Your information is protected at the highest levels of security standards.
+                All your data is encrypted with blockchain verification and
+                immutable audit trails. Your information is protected at the
+                highest levels of security standards.
               </p>
             </div>
           </div>

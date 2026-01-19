@@ -67,28 +67,14 @@ export interface CaseFile {
   title: string;
   description: string;
   status: CaseStatus;
-  
-  // Database IDs
-  judge_id?: string;
-  lawyer_a_id?: string;
-  lawyer_b_id?: string;
-  created_by?: string;
-
-  // Joined Profiles (For displaying names)
-  judge?: Profile;
-  lawyer_a?: Profile;
-  lawyer_b?: Profile;
-
-  // Legacy fields
-  case_number?: string;
-  caseNumber?: string;
-  case_type?: string;
+  caseNumber: string;
+  caseType: string;
   courtName?: string;
-  presidingJudge?: string;
-  createdAt?: string;
-  created_at?: string;
-  updatedAt?: string;
-  evidenceCount?: number;
+  partyA: string;
+  partyB: string;
+  createdAt: string;
+  updatedAt: string;
+  evidenceCount: number;
 }
 
 // List Item Interface

@@ -3,24 +3,30 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  Briefcase,
   CheckCircle2,
+  Clipboard,
   Gavel,
   Loader2,
   Scale,
   Shield,
   Users,
   Wallet,
-  Briefcase,
-  Clipboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeb3 } from "@/contexts/Web3Context";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { verifyWalletAuthorization } from "@/services/walletVerificationService";
 import { toast } from "sonner";
 
-type RoleCategory = "judiciary" | "lawyer" | "clerk" | "public_party" | "police";
+type RoleCategory =
+  | "judiciary"
+  | "lawyer"
+  | "clerk"
+  | "public_party"
+  | "police";
 
 const roleConfig = {
   judiciary: {
@@ -126,9 +132,25 @@ const Auth = () => {
     setAuthInitiated(true);
 
     try {
+      // STEP 1: Verify wallet is authorized for this role
+      console.log(`[Auth] Verifying wallet ${address} for role: ${role}`);
+      const walletVerification = await verifyWalletAuthorization(address, role);
+
+      if (!walletVerification.isAuthorized) {
+        toast.error(
+          walletVerification.error ||
+            `Your wallet is not authorized for the ${role} role. Please contact an administrator.`,
+        );
+        setAuthInitiated(false);
+        return;
+      }
+
+      toast.success(`✓ Wallet verified for ${role} role`);
+
+      // STEP 2: Sign message for wallet verification
       const walletEmail = `${address.toLowerCase()}@wallet.nyaysutra.court`;
       const message =
-        `Sign in to NyaySutra\nWallet: ${address}\nTimestamp: ${Date.now()}`;
+        `Sign in to NyaySutra\nWallet: ${address}\nRole: ${role}\nTimestamp: ${Date.now()}`;
 
       const signature = await signMessage(message);
       if (!signature) {
@@ -138,6 +160,7 @@ const Auth = () => {
 
       const derivedPassword = `ns_wallet_${signature.slice(0, 32)}`;
 
+      // STEP 3: Authenticate with Supabase
       const { data: signInData, error: signInError } = await supabase.auth
         .signInWithPassword({
           email: walletEmail,
@@ -152,6 +175,13 @@ const Auth = () => {
           .select("role_category")
           .eq("user_id", signInData.user?.id)
           .maybeSingle();
+
+        // Verify the retrieved role matches what we authorized
+        if (profileData?.role_category !== role) {
+          toast.error("Role mismatch detected. Please try again.");
+          setAuthInitiated(false);
+          return;
+        }
 
         if (profileData?.role_category === "police") {
           navigate("/police/dashboard", { replace: true });
@@ -201,11 +231,12 @@ const Auth = () => {
         toast.success("Wallet connected & account created!");
 
         if (!signUpData.session) {
-          const { data: postSignUpData, error: postSignUpError } = await supabase.auth
-            .signInWithPassword({
-              email: walletEmail,
-              password: derivedPassword,
-            });
+          const { data: postSignUpData, error: postSignUpError } =
+            await supabase.auth
+              .signInWithPassword({
+                email: walletEmail,
+                password: derivedPassword,
+              });
 
           if (postSignUpError) {
             toast.error("Sign-in failed after creation. Please try again.");
@@ -240,7 +271,13 @@ const Auth = () => {
     "shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30",
   );
 
-  const roles: RoleCategory[] = ["judiciary", "lawyer", "clerk", "public_party", "police"];
+  const roles: RoleCategory[] = [
+    "judiciary",
+    "lawyer",
+    "clerk",
+    "public_party",
+    "police",
+  ];
 
   // If no role selected yet, show role selection screen
   if (!roleParam) {
@@ -263,7 +300,10 @@ const Auth = () => {
             className="text-center mb-12"
           >
             <h1 className="text-5xl font-bold text-white mb-4">
-              Welcome to <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">NyaySutra</span>
+              Welcome to{" "}
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                NyaySutra
+              </span>
             </h1>
             <p className="text-xl text-slate-300">
               Choose your role to continue
@@ -290,14 +330,16 @@ const Auth = () => {
                   className={cn(
                     "glass-card p-6 rounded-2xl border-2 cursor-pointer transition-all",
                     cfg.border,
-                    "hover:shadow-lg hover:shadow-blue-500/20"
+                    "hover:shadow-lg hover:shadow-blue-500/20",
                   )}
                 >
                   <div className="text-center">
-                    <div className={cn(
-                      "w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br",
-                      cfg.gradient
-                    )}>
+                    <div
+                      className={cn(
+                        "w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center bg-gradient-to-br",
+                        cfg.gradient,
+                      )}
+                    >
                       <RoleIcon className="w-8 h-8 text-white" />
                     </div>
                     <h3 className="text-lg font-bold text-white mb-1">
@@ -322,7 +364,8 @@ const Auth = () => {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="text-center text-slate-400 mt-12 max-w-2xl"
           >
-            Each role has specialized features tailored to your needs. Select your role to proceed with secure wallet-based authentication.
+            Each role has specialized features tailored to your needs. Select
+            your role to proceed with secure wallet-based authentication.
           </motion.p>
         </motion.div>
       </div>
@@ -368,10 +411,12 @@ const Auth = () => {
                     config.bg.replace("bg-", "bg-"),
                   )}
                 />
-                <div className={cn(
-                  "relative w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center border border-white/20",
-                  config.gradient
-                )}>
+                <div
+                  className={cn(
+                    "relative w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center border border-white/20",
+                    config.gradient,
+                  )}
+                >
                   <Icon className="w-10 h-10 text-white" />
                 </div>
               </motion.div>
@@ -462,7 +507,8 @@ const Auth = () => {
               transition={{ duration: 0.4, delay: 0.2 }}
               className="text-xs text-center text-slate-500"
             >
-              🔒 Secure blockchain-based authentication. Your wallet controls your identity.
+              🔒 Secure blockchain-based authentication. Your wallet controls
+              your identity.
             </motion.p>
           </div>
 
@@ -474,7 +520,9 @@ const Auth = () => {
           >
             <div className="flex gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <span>No password required - wallet signature authentication</span>
+              <span>
+                No password required - wallet signature authentication
+              </span>
             </div>
             <div className="flex gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
@@ -482,7 +530,9 @@ const Auth = () => {
             </div>
             <div className="flex gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <span>Enterprise-grade security with blockchain verification</span>
+              <span>
+                Enterprise-grade security with blockchain verification
+              </span>
             </div>
           </motion.div>
         </div>
